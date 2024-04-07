@@ -18,7 +18,7 @@ func Port(port string) Option {
 // ReadTimeout -.
 func ReadTimeout(timeout time.Duration) Option {
 	return func(s *Server) {
-		s.server.ReadTimeout = timeout
+		s.server.ReadTimeout = timeout * time.Second
 	}
 }
 

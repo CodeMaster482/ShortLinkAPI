@@ -6,17 +6,16 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
-	"ShortLinkAPI/config"
-	"ShortLinkAPI/pkg/generator"
-	"ShortLinkAPI/pkg/httpserver"
-	"ShortLinkAPI/pkg/logger"
-	"ShortLinkAPI/pkg/postgres"
+	linkHandler "github.com/CodeMaster482/ShortLinkAPI/internal/delivery/http/handler"
+	linkRepository "github.com/CodeMaster482/ShortLinkAPI/internal/repository/postgres"
+	linkUsecase "github.com/CodeMaster482/ShortLinkAPI/internal/usecase"
 
-	linkHandler "ShortLinkAPI/internal/delivery/http/handler"
-	linkRepository "ShortLinkAPI/internal/repository/postgres"
-	linkUsecase "ShortLinkAPI/internal/usecase"
+	"github.com/CodeMaster482/ShortLinkAPI/config"
+	"github.com/CodeMaster482/ShortLinkAPI/pkg/generator"
+	"github.com/CodeMaster482/ShortLinkAPI/pkg/httpserver"
+	"github.com/CodeMaster482/ShortLinkAPI/pkg/logger"
+	"github.com/CodeMaster482/ShortLinkAPI/pkg/postgres"
 
 	"github.com/gin-gonic/gin"
 )
@@ -45,7 +44,7 @@ func Run(cfg *config.Config) {
 	}
 	defer pg.Close()
 
-	generator := generator.NewGenerator(
+	g := generator.NewGenerator(
 		generator.WithAlphabet(cfg.LinkGen.Alphabet),
 		generator.WithHashFunc(crypto.MD5),
 		generator.WithLength(cfg.LinkGen.Length),
@@ -53,7 +52,7 @@ func Run(cfg *config.Config) {
 
 	// Use case
 	lr := linkRepository.NewLinkStorage(pg.Pool)
-	lu := linkUsecase.NewLinkService(cfg, lr, generator)
+	lu := linkUsecase.NewLinkService(cfg, lr, g)
 	lh := linkHandler.NewLinkHandler(lu)
 
 	// HTTP Server
@@ -66,8 +65,8 @@ func Run(cfg *config.Config) {
 	httpServer := httpserver.New(
 		r,
 		httpserver.Port(cfg.HTTP.Port),
-		httpserver.ReadTimeout(cfg.HTTP.ReadTimeout*time.Second),
-		httpserver.WriteTimeout(cfg.HTTP.WriteTimeout*time.Second),
+		httpserver.ReadTimeout(cfg.HTTP.ReadTimeout),
+		httpserver.WriteTimeout(cfg.HTTP.WriteTimeout),
 	)
 
 	// Waiting signal

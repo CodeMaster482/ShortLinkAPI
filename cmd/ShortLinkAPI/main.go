@@ -1,11 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
-	"ShortLinkAPI/config"
-	"ShortLinkAPI/internal/app"
+	"github.com/CodeMaster482/ShortLinkAPI/config"
+	"github.com/CodeMaster482/ShortLinkAPI/internal/app"
 
 	"github.com/joho/godotenv"
 )
@@ -13,7 +12,7 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		fmt.Println("Failed to load .env file")
+		log.Fatalf("Config error: %s", err)
 		return
 	}
 

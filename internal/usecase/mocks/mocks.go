@@ -5,11 +5,11 @@
 package mock_usecase
 
 import (
-	model "ShortLinkAPI/internal/model"
 	context "context"
 	reflect "reflect"
 	time "time"
 
+	model "github.com/CodeMaster482/ShortLinkAPI/internal/model"
 	gomock "github.com/golang/mock/gomock"
 )
 

@@ -2,32 +2,25 @@ package usecase
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"testing"
 	"time"
 
-	"ShortLinkAPI/config"
-	apierror "ShortLinkAPI/pkg/errors"
-
-	"ShortLinkAPI/internal/delivery/http/dto"
-	"ShortLinkAPI/internal/model"
-	mock_usecase "ShortLinkAPI/internal/usecase/mocks"
+	"github.com/CodeMaster482/ShortLinkAPI/internal/delivery/http/dto"
+	"github.com/CodeMaster482/ShortLinkAPI/internal/model"
+	mock_usecase "github.com/CodeMaster482/ShortLinkAPI/internal/usecase/mocks"
+	apierror "github.com/CodeMaster482/ShortLinkAPI/pkg/errors"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
 
 var (
-	cfg = &config.Config{
-		Service: config.Service{
-			Host: "localhost",
-			Port: 8080,
-		},
-	}
 	prefix = "http://localhost:8080/url/"
 )
 
 func TestLinkService_GetOriginalLink(t *testing.T) {
+	t.Parallel()
 
 	tests := []struct {
 		name          string
@@ -68,6 +61,7 @@ func TestLinkService_GetOriginalLink(t *testing.T) {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
@@ -86,10 +80,9 @@ func TestLinkService_GetOriginalLink(t *testing.T) {
 			if test.expectedError != nil {
 				require.ErrorAs(t, err, &test.expectedError)
 				return
-			} else {
-				require.NoError(t, err)
 			}
 
+			require.NoError(t, err)
 			require.Equal(t, test.expectedLink, link)
 		})
 	}
@@ -129,7 +122,7 @@ func TestLinkService_CreateShortLink(t *testing.T) {
 				Link: "bag",
 			},
 			expectedLink:  nil,
-			expectedError: apierror.NewAppError(apierror.ErrUrlNotValid, errors.New("empty URL")),
+			expectedError: apierror.NewAPIError(apierror.ErrURLNotValid, fmt.Errorf("empty URL")),
 			mockBehaviour: func(repository *mock_usecase.MockLinkRepository, generator *mock_usecase.MockGenerator, dto *dto.CreateLinkRequest, link *model.Link) {
 			},
 		},
@@ -138,6 +131,7 @@ func TestLinkService_CreateShortLink(t *testing.T) {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
@@ -156,12 +150,14 @@ func TestLinkService_CreateShortLink(t *testing.T) {
 			if test.expectedError != nil {
 				require.ErrorAs(t, err, &test.expectedError)
 				return
-			} else {
-				require.NoError(t, err)
 			}
+
+			require.NoError(t, err)
+
 			if link != nil {
 				link.ExpiresAt = time.Now()
 			}
+
 			require.Equal(t, test.expectedLink.ShortLink, link.ShortLink)
 			require.Equal(t, test.expectedLink.ShortLink, link.ShortLink)
 		})

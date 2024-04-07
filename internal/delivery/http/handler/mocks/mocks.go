@@ -5,11 +5,11 @@
 package mock_handler
 
 import (
-	dto "ShortLinkAPI/internal/delivery/http/dto"
-	model "ShortLinkAPI/internal/model"
 	context "context"
 	reflect "reflect"
 
+	dto "github.com/CodeMaster482/ShortLinkAPI/internal/delivery/http/dto"
+	model "github.com/CodeMaster482/ShortLinkAPI/internal/model"
 	gomock "github.com/golang/mock/gomock"
 )
 

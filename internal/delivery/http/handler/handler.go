@@ -1,11 +1,12 @@
 package handler
 
 import (
-	"ShortLinkAPI/internal/delivery/http/dto"
-	"ShortLinkAPI/internal/model"
-	apperror "ShortLinkAPI/pkg/errors"
 	"context"
 	"net/http"
+
+	"github.com/CodeMaster482/ShortLinkAPI/internal/delivery/http/dto"
+	"github.com/CodeMaster482/ShortLinkAPI/internal/model"
+	apierror "github.com/CodeMaster482/ShortLinkAPI/pkg/errors"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mailru/easyjson"
@@ -28,7 +29,7 @@ func (h *LinkHandler) GetLink(ctx *gin.Context) {
 	token := ctx.Param("key")
 
 	if token == "" {
-		_ = ctx.Error(apperror.BadRequestError())
+		_ = ctx.Error(apierror.BadRequestError())
 		return
 	}
 
@@ -44,12 +45,12 @@ func (h *LinkHandler) GetLink(ctx *gin.Context) {
 func (h *LinkHandler) CreateLink(ctx *gin.Context) {
 	request := &dto.CreateLinkRequest{}
 	if err := easyjson.UnmarshalFromReader(ctx.Request.Body, request); err != nil {
-		_ = ctx.Error(apperror.BadRequestError())
+		_ = ctx.Error(apierror.BadRequestError())
 		return
 	}
 
 	if request.Link == "" {
-		_ = ctx.Error(apperror.ErrBadRequest)
+		_ = ctx.Error(apierror.BadRequestError())
 		return
 	}
 

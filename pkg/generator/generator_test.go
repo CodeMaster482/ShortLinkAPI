@@ -6,8 +6,9 @@ import (
 )
 
 func TestGenerateShortURL(t *testing.T) {
-	g := NewGenerator()
+	t.Parallel()
 
+	g := NewGenerator()
 	urls := []struct {
 		url          string
 		expectedHash string
@@ -27,6 +28,7 @@ func TestGenerateShortURL(t *testing.T) {
 }
 
 func TestCustomOptions(t *testing.T) {
+	t.Parallel()
 	g := NewGenerator(
 		WithHashFunc(crypto.SHA256),
 		WithAlphabet("abcdefghijklmnopqrstuvwxyzQWERTYUIOPASDFGHJKZXCVBNM"),

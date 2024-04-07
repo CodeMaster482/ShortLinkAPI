@@ -1,15 +1,17 @@
 package postgres
 
 import (
-	"ShortLinkAPI/internal/model"
-	"ShortLinkAPI/internal/utils"
-	apierror "ShortLinkAPI/pkg/errors"
 	"context"
 	"errors"
 	"reflect"
 	"regexp"
 	"testing"
 	"time"
+
+	apierror "github.com/CodeMaster482/ShortLinkAPI/pkg/errors"
+
+	"github.com/CodeMaster482/ShortLinkAPI/internal/model"
+	"github.com/CodeMaster482/ShortLinkAPI/internal/utils"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/pashagolub/pgxmock"
@@ -24,7 +26,7 @@ const (
 
 func TestPostgreSQLRepository_StoreLink(t *testing.T) {
 	timeLink := time.Now().Add(24 * time.Hour)
-	tests := []struct {
+	testCases := []struct {
 		name           string
 		longUrl        string
 		shortUrl       string
@@ -56,32 +58,34 @@ func TestPostgreSQLRepository_StoreLink(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			mock, _ := pgxmock.NewPool()
 
 			repo := &LinkStorage{
 				db: mock,
 			}
 
-			escapedQuery := regexp.QuoteMeta(tt.expectQuery)
+			escapedQuery := regexp.QuoteMeta(tc.expectQuery)
 
 			mock.ExpectExec(escapedQuery).
-				WithArgs(tt.longUrl, tt.shortUrl, tt.expirationTime).
+				WithArgs(tc.longUrl, tc.shortUrl, tc.expirationTime).
 				WillReturnResult(pgxmock.NewResult("INSERT", 1)).
-				WillReturnError(tt.expectError)
+				WillReturnError(tc.expectError)
 
 			err := repo.StoreLink(
 				context.TODO(),
 				&model.Link{
-					OriginalLink: tt.longUrl,
-					Token:        tt.shortUrl,
-					ExpiresAt:    tt.expirationTime,
+					OriginalLink: tc.longUrl,
+					Token:        tc.shortUrl,
+					ExpiresAt:    tc.expirationTime,
 				},
 			)
 
-			if tt.expectError != nil {
-				assert.EqualError(t, err, tt.expectError.Error())
+			if tc.expectError != nil {
+				assert.EqualError(t, err, tc.expectError.Error())
 			} else {
 				assert.NoError(t, err)
 			}
@@ -91,57 +95,10 @@ func TestPostgreSQLRepository_StoreLink(t *testing.T) {
 	}
 }
 
-// func TestPostgreSQLRepository_UpdateTime(t *testing.T) {
-// 	tests := []struct {
-// 		name           string
-// 		expirationTime time.Time
-// 		shortUrl       string
-// 		expectError    error
-// 	}{
-// 		{
-// 			name:           "Valid case",
-// 			expirationTime: time.Now().Add(24 * time.Hour),
-// 			shortUrl:       "abc123",
-// 			expectError:    nil,
-// 		},
-// 		{
-// 			name:           "Error case",
-// 			expirationTime: time.Now().Add(24 * time.Hour),
-// 			shortUrl:       "abc123",
-// 			expectError:    errors.New("mock error"),
-// 		},
-// 	}
-
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			mock, _ := pgxmock.NewPool()
-
-// 			repo := &LinkStorage{
-// 				db: mock,
-// 			}
-
-// 			escapedQuery := regexp.QuoteMeta(updateTime)
-
-// 			mock.ExpectExec(escapedQuery).
-// 				WithArgs(tt.expirationTime, tt.shortUrl).
-// 				WillReturnResult(pgxmock.NewResult("UPDATE", 1)).
-// 				WillReturnError(tt.expectError)
-
-// 			err := repo.UpdateTime(tt.expirationTime, tt.shortUrl)
-
-// 			if tt.expectError != nil {
-// 				assert.EqualError(t, err, tt.expectError.Error())
-// 			} else {
-// 				assert.NoError(t, err)
-// 			}
-
-// 			assert.NoError(t, mock.ExpectationsWereMet())
-// 		})
-// 	}
-// }
-
 func TestGetLinkByOriginal(t *testing.T) {
-	tests := []struct {
+	t.Parallel()
+
+	testCases := []struct {
 		name         string
 		origLink     string
 		rows         *pgxmock.Rows
@@ -179,8 +136,10 @@ func TestGetLinkByOriginal(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			mock, _ := pgxmock.NewPool()
 			repo := &LinkStorage{
 				db: mock,
@@ -188,18 +147,18 @@ func TestGetLinkByOriginal(t *testing.T) {
 
 			escapedQuery := regexp.QuoteMeta(getLinkByFullLink)
 			mock.ExpectQuery(escapedQuery).
-				WithArgs(tt.origLink).
-				WillReturnRows(tt.rows).
-				WillReturnError(tt.errorPgx)
+				WithArgs(tc.origLink).
+				WillReturnRows(tc.rows).
+				WillReturnError(tc.errorPgx)
 
-			result, err := repo.GetLinkByOriginal(context.Background(), tt.origLink)
+			result, err := repo.GetLinkByOriginal(context.Background(), tc.origLink)
 
-			if !errors.Is(err, tt.expectError) {
-				t.Errorf("unexpected error, expected: %v, got: %v", tt.expectError, err)
+			if !errors.Is(err, tc.expectError) {
+				t.Errorf("unexpected error, expected: %v, got: %v", tc.expectError, err)
 			}
 
-			if !reflect.DeepEqual(result, tt.expectedLink) {
-				t.Errorf("unexpected result, expected: %v, got: %v", tt.expectedLink, result)
+			if !reflect.DeepEqual(result, tc.expectedLink) {
+				t.Errorf("unexpected result, expected: %v, got: %v", tc.expectedLink, result)
 			}
 
 			assert.NoError(t, mock.ExpectationsWereMet())
@@ -208,7 +167,7 @@ func TestGetLinkByOriginal(t *testing.T) {
 }
 
 func TestLinkStorage_GetLink(t *testing.T) {
-	tests := []struct {
+	testCases := []struct {
 		name        string
 		token       string
 		rows        *pgxmock.Rows
@@ -244,8 +203,10 @@ func TestLinkStorage_GetLink(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			mock, mockErr := pgxmock.NewPool()
 
 			if mockErr != nil {
@@ -259,18 +220,18 @@ func TestLinkStorage_GetLink(t *testing.T) {
 			escapedQuery := regexp.QuoteMeta("SELECT s.original_link, s.token, s.expires_at FROM link s WHERE s.token = $1")
 
 			mock.ExpectQuery(escapedQuery).
-				WithArgs(tt.token).
-				WillReturnRows(tt.rows).
-				WillReturnError(tt.errorPgx)
+				WithArgs(tc.token).
+				WillReturnRows(tc.rows).
+				WillReturnError(tc.errorPgx)
 
-			result, err := repo.GetLink(context.Background(), tt.token)
+			result, err := repo.GetLink(context.Background(), tc.token)
 
-			if tt.expectError != nil {
-				assert.EqualError(t, err, tt.expectError.Error())
+			if tc.expectError != nil {
+				assert.EqualError(t, err, tc.expectError.Error())
 				assert.Nil(t, result)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.result, result)
+				assert.Equal(t, tc.result, result)
 			}
 
 			assert.NoError(t, mock.ExpectationsWereMet())
@@ -279,7 +240,8 @@ func TestLinkStorage_GetLink(t *testing.T) {
 }
 
 func TestStartRecalculation(t *testing.T) {
-	// Mock database
+	t.Parallel()
+
 	mock, mockErr := pgxmock.NewPool()
 	if mockErr != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", mockErr)

@@ -15,5 +15,6 @@ func RequestTimeout(timeout time.Duration) gin.HandlerFunc {
 		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}
+
 	return fn
 }

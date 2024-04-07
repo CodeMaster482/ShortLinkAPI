@@ -1,7 +1,9 @@
 package middleware
 
 import (
-	apperror "ShortLinkAPI/pkg/errors"
+	"errors"
+
+	apperror "github.com/CodeMaster482/ShortLinkAPI/pkg/errors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,10 +17,11 @@ func ErrorMiddleware() gin.HandlerFunc {
 		}
 
 		e := ctx.Errors[0].Unwrap()
-		apiErr, ok := e.(*apperror.ApiError)
 
 		var err error
-		if ok {
+
+		var apiErr *apperror.APIError
+		if errors.As(e, &apiErr) {
 			err = apiErr.Unwrap()
 		} else {
 			err = apperror.ErrInternalServer
@@ -29,5 +32,6 @@ func ErrorMiddleware() gin.HandlerFunc {
 			"message": apperror.Errors[err].Message,
 		})
 	}
+
 	return fn
 }

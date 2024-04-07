@@ -1,23 +1,24 @@
 package handler
 
 import (
-	"ShortLinkAPI/internal/delivery/http/dto"
-	mock_handler "ShortLinkAPI/internal/delivery/http/handler/mocks"
-	"ShortLinkAPI/internal/model"
 	"bytes"
-	"encoding/json"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/CodeMaster482/ShortLinkAPI/internal/delivery/http/dto"
+	mock_handler "github.com/CodeMaster482/ShortLinkAPI/internal/delivery/http/handler/mocks"
+	"github.com/CodeMaster482/ShortLinkAPI/internal/delivery/http/middleware"
+	"github.com/CodeMaster482/ShortLinkAPI/internal/model"
+	apierror "github.com/CodeMaster482/ShortLinkAPI/pkg/errors"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
-	"gopkg.in/go-playground/assert.v1"
 )
 
 func TestGetLink(t *testing.T) {
-	// Test cases
 	testCases := []struct {
 		name           string
 		token          string
@@ -46,27 +47,37 @@ func TestGetLink(t *testing.T) {
 				usecase.EXPECT().GetFullLink(gomock.Any(), "").Times(0)
 			},
 		},
-		// Add more test cases as needed
+		{
+			name:           "Not Found Token",
+			token:          "token",
+			expectedStatus: http.StatusInternalServerError,
+			expectedHeader: "",
+			expectedBody:   "",
+			mockBehaviour: func(usecase *mock_handler.MockLinkUsecase) {
+				usecase.EXPECT().GetFullLink(gomock.Any(), "token").Return("", apierror.ErrLinkNotFound).Times(1)
+			},
+		},
 	}
 
-	// Run tests
 	for _, tc := range testCases {
 		test := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Setup
 			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
 			gin.SetMode(gin.TestMode)
 			usecase := mock_handler.NewMockLinkUsecase(ctrl)
 			handler := NewLinkHandler(usecase)
+
 			router := gin.New()
+			router.Use(middleware.ErrorMiddleware())
 			router.GET("/:key", handler.GetLink)
 
 			test.mockBehaviour(usecase)
 
-			req, err := http.NewRequest(http.MethodGet, "/"+tc.token, nil)
+			req, err := http.NewRequest(http.MethodGet, "/"+tc.token, http.NoBody)
 			if err != nil {
 				t.Fatalf("could not create request: %v", err)
 			}
@@ -91,62 +102,93 @@ func TestGetLink(t *testing.T) {
 
 func TestCreateLink(t *testing.T) {
 	testCases := []struct {
-		name             string
-		requestBody      string
-		expectedStatus   int
-		expectedResponse dto.CreateLinkResponse
-		mockBehaviour    func(usecase *mock_handler.MockLinkUsecase)
+		name           string
+		requestBody    string
+		expectedStatus int
+		expectedBody   string
+		mockBehaviour  func(usecase *mock_handler.MockLinkUsecase)
 	}{
 		{
-			name:             "Valid Request",
-			requestBody:      `{"Link": "https://example.com"}`,
-			expectedStatus:   http.StatusOK,
-			expectedResponse: dto.CreateLinkResponse{ShortLink: "shortLink", ExpiresAt: time.Now().Add(24 * time.Hour)},
+			name:           "Valid Token",
+			requestBody:    `{"link":"https://example.com"}`,
+			expectedStatus: http.StatusOK,
+			expectedBody:   `{"short_link":"short","expires_at":"2012-01-10T00:00:00Z"}`,
 			mockBehaviour: func(usecase *mock_handler.MockLinkUsecase) {
-				usecase.EXPECT().CreateShortLink(gomock.Any(), gomock.Any()).Return(&model.Link{OriginalLink: "https://example.com", ShortLink: "shortLink", ExpiresAt: time.Now().Add(24 * time.Hour)}, nil).Times(1)
+				usecase.EXPECT().CreateShortLink(
+					gomock.Any(),
+					&dto.CreateLinkRequest{Link: "https://example.com"},
+				).
+					Return(&model.Link{
+						OriginalLink: "https://example.com",
+						ShortLink:    "short",
+						Token:        "token",
+						ExpiresAt:    time.Date(2012, time.January, 10, 0, 0, 0, 0, time.UTC),
+					}, nil).
+					Times(1)
 			},
+		},
+		{
+			name:           "Creation Error",
+			requestBody:    `{"link":"https://example.com"}`,
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   `{"message":"internal server error","status":500}`,
+			mockBehaviour: func(usecase *mock_handler.MockLinkUsecase) {
+				usecase.EXPECT().CreateShortLink(
+					gomock.Any(),
+					&dto.CreateLinkRequest{Link: "https://example.com"},
+				).
+					Return(nil, apierror.ErrUnableToCreateLink).
+					Times(1)
+			},
+		},
+		{
+			name:           "Corruted Request Body",
+			requestBody:    `{"link":"https://example.co`,
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"message":"bad request","status":400}`,
+			mockBehaviour:  func(usecase *mock_handler.MockLinkUsecase) {},
+		},
+		{
+			name:           "Empty link value",
+			requestBody:    `{"link":""}`,
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"message":"bad request","status":400}`,
+			mockBehaviour:  func(usecase *mock_handler.MockLinkUsecase) {},
 		},
 	}
 
-	// Run tests
 	for _, tc := range testCases {
 		test := tc
-		t.Run(test.name, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Setup
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
+			usecase := mock_handler.NewMockLinkUsecase(ctrl)
+			handler := NewLinkHandler(usecase)
+
 			gin.SetMode(gin.TestMode)
-			r := gin.New()
+			router := gin.New()
+			router.Use(middleware.ErrorMiddleware())
+			router.POST("/url", handler.CreateLink)
 
-			mockUsecase := mock_handler.NewMockLinkUsecase(ctrl)
-			handler := NewLinkHandler(mockUsecase)
+			test.mockBehaviour(usecase)
 
-			r.POST("/url", handler.CreateLink)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "/url", bytes.NewBufferString(test.requestBody))
+			if err != nil {
+				t.Fatalf("could not create request: %v", err)
+			}
 
 			w := httptest.NewRecorder()
-			req, _ := http.NewRequest("POST", "/url", bytes.NewBufferString(test.requestBody))
-			ctx, _ := gin.CreateTestContext(w)
-			ctx.Request = req
+			router.ServeHTTP(w, req)
 
-			test.mockBehaviour(mockUsecase)
+			if w.Code != tc.expectedStatus {
+				t.Errorf("expected status %d; got %d", tc.expectedStatus, w.Code)
+			}
 
-			// Call the function we're testing
-			handler.CreateLink(ctx)
-
-			// Check the response
-			assert.Equal(t, test.expectedStatus, w.Code)
-
-			if test.expectedStatus == http.StatusOK {
-				var response dto.CreateLinkResponse
-				err := json.Unmarshal(w.Body.Bytes(), &response)
-				if err != nil {
-					t.Fatalf("could not unmarshal response: %v", err)
-				}
-
-				assert.Equal(t, test.expectedResponse, response)
+			if tc.expectedBody != "" && w.Body.String() != tc.expectedBody {
+				t.Errorf("expected body %q; got %q", tc.expectedBody, w.Body.String())
 			}
 		})
 	}

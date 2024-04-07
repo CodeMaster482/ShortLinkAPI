@@ -27,9 +27,9 @@ var (
 			http.StatusNotFound,
 			ErrLinkNotFound.Error(),
 		},
-		ErrUrlNotValid: {
+		ErrURLNotValid: {
 			http.StatusBadRequest,
-			ErrUrlNotValid.Error(),
+			ErrURLNotValid.Error(),
 		},
 	}
 )
@@ -40,40 +40,41 @@ var (
 	ErrUnableToCreateLink = errors.New("unable to create link")
 
 	ErrLinkNotFound = errors.New("link not found")
-	ErrUrlNotValid  = errors.New("url is not valid")
+	ErrURLNotValid  = errors.New("url is not valid")
 )
 
-type ApiError struct {
+type APIError struct {
 	err           error
 	internalError error
 }
 
-func (ae ApiError) Error() string {
+func (ae APIError) Error() string {
 	if ae.internalError == nil {
 		return fmt.Sprintf("[error]: %s", ae.err)
 	}
+
 	return fmt.Sprintf("[error]: %s", ae.internalError)
 }
 
-func (ae ApiError) Unwrap() error {
+func (ae APIError) Unwrap() error {
 	return ae.err
 }
 
-func NewAppError(err, internal error) *ApiError {
-	return &ApiError{
+func NewAPIError(err, internal error) *APIError {
+	return &APIError{
 		err:           err,
 		internalError: internal,
 	}
 }
 
-func BadRequestError() *ApiError {
-	return NewAppError(ErrBadRequest, nil)
+func BadRequestError() *APIError {
+	return NewAPIError(ErrBadRequest, nil)
 }
 
-func InternalError(err error) *ApiError {
-	return NewAppError(ErrInternalServer, err)
+func InternalError(err error) *APIError {
+	return NewAPIError(ErrInternalServer, err)
 }
 
-func NotFoundError() *ApiError {
-	return NewAppError(ErrLinkNotFound, nil)
+func NotFoundError() *APIError {
+	return NewAPIError(ErrLinkNotFound, nil)
 }

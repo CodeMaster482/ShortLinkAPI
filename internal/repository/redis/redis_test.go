@@ -1,37 +1,43 @@
 package redis
 
 import (
-	"ShortLinkAPI/internal/model"
-	apierror "ShortLinkAPI/pkg/errors"
 	"context"
-	"errors"
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/CodeMaster482/ShortLinkAPI/internal/model"
+	apierror "github.com/CodeMaster482/ShortLinkAPI/pkg/errors"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/go-redis/redismock/v8"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStoreLink(t *testing.T) {
-	mockClient, mock := redismock.NewClientMock()
+const (
+	testURL   = "https://www.example.com"
+	testToken = "short"
+)
 
+func TestStoreLink(t *testing.T) {
+	t.Parallel()
+
+	mockClient, mock := redismock.NewClientMock()
 	repo := &LinkRedisStorage{
 		Client: mockClient,
 	}
 
-	token := "short"
-	longUrl := "https://www.example.com"
+	token := testToken
+	longURL := testURL
 	expirationTime := time.Now().Add(1 * time.Hour)
 
-	mock.ExpectSet(token, longUrl, 0).SetVal(token)
-	mock.ExpectExpire(token, expirationTime.Sub(time.Now())).SetVal(true)
+	mock.ExpectSet(token, longURL, 0).SetVal(token)
+	mock.ExpectExpire(token, time.Until(expirationTime)).SetVal(true)
 
 	err := repo.StoreLink(
 		context.TODO(),
 		&model.Link{
-			OriginalLink: longUrl,
+			OriginalLink: longURL,
 			Token:        token,
 			ExpiresAt:    expirationTime,
 		},
@@ -41,24 +47,25 @@ func TestStoreLink(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet(), "Expectations were not met")
 }
 
-func TestSaveUrl_SetError(t *testing.T) {
+func TestSaveLink_SetError(t *testing.T) {
+	t.Parallel()
 	mockClient, mock := redismock.NewClientMock()
 
 	repo := &LinkRedisStorage{
 		Client: mockClient,
 	}
 
-	token := "short"
-	longUrl := "https://www.example.com"
+	token := testToken
+	longURL := testURL
 	expirationTime := time.Now().Add(1 * time.Hour)
 
 	expectedError := fmt.Errorf("set error")
-	mock.ExpectSet(token, longUrl, 0).SetErr(expectedError)
+	mock.ExpectSet(token, longURL, 0).SetErr(expectedError)
 
 	err := repo.StoreLink(
 		context.TODO(),
 		&model.Link{
-			OriginalLink: longUrl,
+			OriginalLink: longURL,
 			Token:        token,
 			ExpiresAt:    expirationTime,
 		},
@@ -68,32 +75,34 @@ func TestSaveUrl_SetError(t *testing.T) {
 }
 
 func TestGetLink_Success(t *testing.T) {
+	t.Parallel()
 	mockClient, mock := redismock.NewClientMock()
 
 	repo := &LinkRedisStorage{
 		Client: mockClient,
 	}
 
-	url := "short"
-	longUrl := "https://www.example.com"
-	mock.ExpectGet(url).SetVal(longUrl)
+	url := testToken
+	longURL := testURL
+	mock.ExpectGet(url).SetVal(longURL)
 
 	result, err := repo.GetLink(context.TODO(), url)
 
 	assert.Nil(t, err, "Expected no error, got %v", err)
-	assert.Equal(t, longUrl, result, "Expected long URL %s, got %s", longUrl, result)
+	assert.Equal(t, longURL, result, "Expected long URL %s, got %s", longURL, result)
 
 	assert.NoError(t, mock.ExpectationsWereMet(), "Expectations were not met")
 }
 
 func TestGetLink_NotFound(t *testing.T) {
+	t.Parallel()
 	mockClient, mock := redismock.NewClientMock()
 
 	repo := &LinkRedisStorage{
 		Client: mockClient,
 	}
 
-	token := "short"
+	token := testToken
 	expectedError := redis.Nil
 	mock.ExpectGet(token).SetErr(expectedError)
 
@@ -109,14 +118,15 @@ func TestGetLink_NotFound(t *testing.T) {
 }
 
 func TestGetUrl_Error(t *testing.T) {
+	t.Parallel()
 	mockClient, mock := redismock.NewClientMock()
 
 	repo := &LinkRedisStorage{
 		Client: mockClient,
 	}
 
-	url := "short"
-	expectedError := errors.New("something went wrong")
+	url := testToken
+	expectedError := fmt.Errorf("something went wrong")
 	mock.ExpectGet(url).SetErr(expectedError)
 
 	result, err := repo.GetLink(context.TODO(), url)

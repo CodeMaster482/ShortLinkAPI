@@ -3,10 +3,10 @@ package grpc
 import (
 	"context"
 
-	"ShortLinkAPI/internal/delivery/grpc/generated"
-	"ShortLinkAPI/internal/delivery/http/dto"
-	"ShortLinkAPI/internal/model"
-	apierror "ShortLinkAPI/pkg/errors"
+	"github.com/CodeMaster482/ShortLinkAPI/internal/delivery/grpc/generated"
+	"github.com/CodeMaster482/ShortLinkAPI/internal/delivery/http/dto"
+	"github.com/CodeMaster482/ShortLinkAPI/internal/model"
+	apierror "github.com/CodeMaster482/ShortLinkAPI/pkg/errors"
 )
 
 type LinkUsecase interface {

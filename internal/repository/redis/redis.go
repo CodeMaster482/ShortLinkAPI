@@ -1,11 +1,13 @@
 package redis
 
 import (
-	"ShortLinkAPI/internal/model"
-	apierror "ShortLinkAPI/pkg/errors"
 	"context"
+	"errors"
 	"fmt"
 	"time"
+
+	"github.com/CodeMaster482/ShortLinkAPI/internal/model"
+	apierror "github.com/CodeMaster482/ShortLinkAPI/pkg/errors"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -21,9 +23,10 @@ func NewLinkStorage(cli *redis.Client) *LinkRedisStorage {
 func (r *LinkRedisStorage) GetLink(ctx context.Context, token string) (string, error) {
 	fullLink, err := r.Client.Get(ctx, token).Result()
 	if err != nil {
-		if err == redis.Nil {
+		if errors.Is(err, redis.Nil) { /* err == redis.Nil */
 			return "", apierror.ErrLinkNotFound
 		}
+
 		return "", err
 	}
 
@@ -36,10 +39,12 @@ func (r *LinkRedisStorage) StoreLink(ctx context.Context, link *model.Link) erro
 		return err
 	}
 
-	duration := link.ExpiresAt.Sub(time.Now())
+	duration := time.Until(link.ExpiresAt)
+
 	err = r.Client.Expire(ctx, link.Token, duration).Err()
 	if err != nil {
-		return fmt.Errorf("error setting expiration time for switch %s: %v", link.Token, err)
+		return fmt.Errorf("error setting expiration time for switch %s: %w", link.Token, err)
 	}
+
 	return nil
 }

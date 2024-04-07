@@ -3,10 +3,10 @@ package generator
 import (
 	"crypto"
 
-	_ "crypto/md5"
-	_ "crypto/sha1"
-	_ "crypto/sha256"
-	_ "crypto/sha512"
+	_ "crypto/md5"    // #nosec
+	_ "crypto/sha1"   // #nosec
+	_ "crypto/sha256" // #nosec
+	_ "crypto/sha512" // #nosec
 )
 
 const (
@@ -22,12 +22,12 @@ type Generator struct {
 }
 
 func (g *Generator) GenerateShortURL(url string) string {
-	// rand.Seed(time.Now().UnixNano())
 	hasher := g.hashFunc().New()
 	hasher.Write([]byte(url))
 	hash := hasher.Sum(nil)
 
 	var result string
+
 	for i := 0; i < g.length; i++ {
 		index := int(hash[i]) % len(g.alphabet)
 		result += string(g.alphabet[index])

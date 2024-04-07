@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"ShortLinkAPI/internal/model"
-	"ShortLinkAPI/internal/utils"
-	apierror "ShortLinkAPI/pkg/errors"
+	"github.com/CodeMaster482/ShortLinkAPI/internal/model"
+	"github.com/CodeMaster482/ShortLinkAPI/internal/utils"
+	apierror "github.com/CodeMaster482/ShortLinkAPI/pkg/errors"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
@@ -77,6 +77,7 @@ func (store *LinkStorage) StoreLink(ctx context.Context, link *model.Link) error
 func (store *LinkStorage) StartRecalculation(interval time.Duration, deleted chan []string) {
 	query := `DELETE FROM link WHERE expires_at < $1 RETURNING token`
 	ticker := time.NewTicker(interval)
+
 	go func() {
 		for {
 			<-ticker.C
@@ -84,13 +85,15 @@ func (store *LinkStorage) StartRecalculation(interval time.Duration, deleted cha
 			if err != nil {
 				continue
 			}
+
 			var del []string
+
 			for rows.Next() {
 				var deletedToken string
-				err := rows.Scan(&deletedToken)
-				if err != nil {
+				if err := rows.Scan(&deletedToken); err != nil {
 					continue
 				}
+
 				del = append(del, deletedToken)
 			}
 			deleted <- del

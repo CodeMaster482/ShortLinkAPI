@@ -1,14 +1,15 @@
 package usecase
 
 import (
-	"ShortLinkAPI/config"
-	"ShortLinkAPI/internal/delivery/http/dto"
-	"ShortLinkAPI/internal/model"
-	apierror "ShortLinkAPI/pkg/errors"
 	"context"
 	"fmt"
 	"net/url"
 	"time"
+
+	"github.com/CodeMaster482/ShortLinkAPI/config"
+	"github.com/CodeMaster482/ShortLinkAPI/internal/delivery/http/dto"
+	"github.com/CodeMaster482/ShortLinkAPI/internal/model"
+	apierror "github.com/CodeMaster482/ShortLinkAPI/pkg/errors"
 )
 
 type LinkRepository interface {
@@ -35,18 +36,20 @@ func (service *LinkService) GetFullLink(ctx context.Context, token string) (stri
 	if err != nil {
 		return "", err
 	}
+
 	return link.OriginalLink, nil
 }
 
 func (service *LinkService) CreateShortLink(ctx context.Context, linkRequest *dto.CreateLinkRequest) (*model.Link, error) {
 	_, err := url.ParseRequestURI(linkRequest.Link)
 	if err != nil {
-		return nil, apierror.NewAppError(apierror.ErrUrlNotValid, err)
+		return nil, apierror.NewAPIError(apierror.ErrURLNotValid, err)
 	}
 
 	link, _ := service.repository.GetLinkByOriginal(ctx, linkRequest.Link)
 	if link != nil {
 		link.ShortLink = service.shortlinkPrefix + link.Token
+
 		return link, nil
 	}
 
@@ -68,8 +71,10 @@ func (service *LinkService) CreateShortLink(ctx context.Context, linkRequest *dt
 
 func NewLinkService(cfg *config.Config, repo LinkRepository, strGenerator Generator) *LinkService {
 	deleteChan := make(chan []string)
-	repo.StartRecalculation(time.Duration(cfg.Service.RecalculationInterval)*time.Hour, deleteChan)
 	prefix := fmt.Sprintf("http://%s:%d/url/", cfg.Service.Host, cfg.Service.Port)
+
+	repo.StartRecalculation(time.Duration(cfg.Service.RecalculationInterval)*time.Hour, deleteChan)
+
 	return &LinkService{
 		repository:      repo,
 		generator:       strGenerator,

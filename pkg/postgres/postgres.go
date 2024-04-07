@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	// "github.com/Masterminds/squirrel"
+	// "github.com/Masterminds/squirrel".
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
