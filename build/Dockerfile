@@ -12,7 +12,7 @@ RUN chmod +x ./server
 
 #Runner
 #scratch
-FROM golang:1.21.0-alpine AS run 
+FROM scratch AS run 
 
 WORKDIR /docker-ShortLinkAPI/
 
