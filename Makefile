@@ -5,7 +5,7 @@ LOCAL_BIN:=$(CURDIR)/bin
 PATH:=$(LOCAL_BIN):$(PATH)
 
 compose-up: ### Run docker-compose
-	docker-compose up --build -d postgres redis && docker-compose logs -f
+	docker-compose up --build -d && docker-compose logs -f
 .PHONY: compose-up
 
 compose-down: ### Down docker-compose
@@ -17,7 +17,7 @@ docker-rm-volume: ### remove docker volume
 .PHONY: docker-rm-volume
 
 docker-it-db:
-	docker exec -it postgres psql -U CodeMaster482 -d FLibraryDB 
+	docker exec -it postgres psql -U ${DB_USER} -d ${DB_NAME} 
 .PHONY: docker-it-db
 
 swag-v1: ### swag init

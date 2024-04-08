@@ -1,9 +1,9 @@
 app:
-  name: 'film-library-API'
+  name: 'short-link-API'
   version: '1.0.0'
 
 grpc:
-  port: '9000'
+  port: '8081'
 
 http:
   port: '8080'
@@ -12,14 +12,13 @@ http:
 
 logger:
   log_level: 'debug'
-  rollbar_env: 'film-library-API'
 
 postgres:
   pool_max: 5
 
 service:
-  host: '127.0.0.1'
-  port: 4040
+  host: 'localhost'
+  port: 8080
   interval: 5
 
 generator:

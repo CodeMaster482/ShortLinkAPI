@@ -33,10 +33,9 @@ type LinkStorage struct {
 
 func (store *LinkStorage) GetLink(ctx context.Context, token string) (*model.Link, error) {
 	query := `SELECT s.original_link, s.token, s.expires_at FROM link s WHERE s.token = $1;`
-	link := &model.Link{}
-	expireStr := ""
+	link := model.Link{}
 
-	err := store.db.QueryRow(context.Background(), query, token).Scan(&link.OriginalLink, &link.Token, &expireStr)
+	err := store.db.QueryRow(context.Background(), query, token).Scan(&link.OriginalLink, &link.Token, &link.ExpiresAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, apierror.ErrLinkNotFound
@@ -44,15 +43,13 @@ func (store *LinkStorage) GetLink(ctx context.Context, token string) (*model.Lin
 		return nil, err
 	}
 
-	link.ExpiresAt, _ = time.Parse(time.RFC3339Nano, expireStr)
-
-	return link, nil
+	return &link, nil
 }
 
 func (store *LinkStorage) StoreLink(ctx context.Context, link *model.Link) error {
-	query := `INSERT INTO link (original, short, expiration_time) VALUES ($1, $2, $3);`
+	query := `INSERT INTO link (original_link, token, expires_at) VALUES ($1, $2, $3);`
 
-	_, err := store.db.Exec(context.Background(), query, link.OriginalLink, link.ShortLink, link.ExpiresAt)
+	_, err := store.db.Exec(context.Background(), query, link.OriginalLink, link.Token, link.ExpiresAt)
 	if err != nil {
 		return err
 	}

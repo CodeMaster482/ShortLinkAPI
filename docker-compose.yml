@@ -46,12 +46,16 @@ services:
   backend:
     container_name: backend
     build:
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./build/Dockerfile
     depends_on:
-      postgres: {service_healthy}
-      redis: {service_healthy}
-    args:
-        memo: $MEMO
+      postgres: 
+        condition: service_healthy
+      redis: 
+        condition: service_healthy
+    volumes:
+      - .env:/docker-ShortLinkAPI/.env
+      - ./config/config.yaml:/docker-ShortLinkAPI/config/config.yaml
     ports:
       - "8080:8080"
       - "8081:8081"

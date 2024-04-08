@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,6 +14,7 @@ import (
 	linkGrpcHandler "github.com/CodeMaster482/ShortLinkAPI/internal/delivery/grpc"
 	"github.com/CodeMaster482/ShortLinkAPI/internal/delivery/grpc/generated"
 	linkHandler "github.com/CodeMaster482/ShortLinkAPI/internal/delivery/http/handler"
+	"github.com/CodeMaster482/ShortLinkAPI/internal/delivery/http/middleware"
 	"github.com/CodeMaster482/ShortLinkAPI/internal/model"
 	linkSQLRepo "github.com/CodeMaster482/ShortLinkAPI/internal/repository/postgres"
 	linkRedisRepo "github.com/CodeMaster482/ShortLinkAPI/internal/repository/redis"
@@ -33,6 +35,14 @@ type LinkRepository interface {
 	GetLink(ctx context.Context, token string) (*model.Link, error)
 	StoreLink(ctx context.Context, link *model.Link) error
 	StartRecalculation(interval time.Duration, deleted chan []string)
+}
+
+func addPingRoutes(rg *gin.RouterGroup) {
+	ping := rg.Group("/ping")
+
+	ping.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, "pong")
+	})
 }
 
 // @title Go ShortLinkAPI
@@ -88,7 +98,13 @@ func Run(cfg *config.Config) {
 
 	// HTTP Server
 	r := gin.New()
+	base := r.Group("/")
+	addPingRoutes(base)
 	api := r.Group("/api/v1")
+
+	api.Use(middleware.ErrorMiddleware())
+	api.Use(middleware.RequestTimeout(500 * time.Millisecond))
+	api.Use(gin.Logger(), gin.Recovery())
 
 	api.POST("/url", lh.CreateLink)
 	api.GET("/url/:key", lh.GetLink)
