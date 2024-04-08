@@ -26,6 +26,37 @@ services:
     restart: always
     networks:
     - net
+  
+  redis:
+    container_name: redis
+    image: redis:latest
+    env_file:
+      - .env
+    ports:
+      - "$REDIS_PORT:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 2s
+      retries: 3
+    networks:
+      - net
+    restart: always
+
+  backend:
+    container_name: backend
+    build:
+      dockerfile: Dockerfile
+    depends_on:
+      postgres: {service_healthy}
+      redis: {service_healthy}
+    args:
+        memo: $MEMO
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    networks:
+      - net
 
 volumes:
   pg-data:

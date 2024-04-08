@@ -17,4 +17,7 @@ COPY --from=builder /github.com/ShortLinkAPI/server .
 
 EXPOSE 8080
 
-ENTRYPOINT ["./server"]
+ARG memo
+ENV memo ${MEMO}
+
+ENTRYPOINT ["./server", "--in-memo", false]

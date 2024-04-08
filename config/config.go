@@ -9,12 +9,15 @@ import (
 
 type (
 	Config struct {
-		App     `yaml:"app"`
-		HTTP    `yaml:"http"`
-		Log     `yaml:"log"`
-		PG      `yaml:"postgres"`
-		Service `yaml:"service"`
-		LinkGen `yaml:"generator"`
+		App      `yaml:"app"`
+		HTTP     `yaml:"http"`
+		GRPC     `yaml:"grpc"`
+		Log      `yaml:"log"`
+		PG       `yaml:"postgres"`
+		Service  `yaml:"service"`
+		LinkGen  `yaml:"generator"`
+		Redis    `yaml:"redis"`
+		UseRedis bool
 	}
 
 	App struct {
@@ -28,6 +31,10 @@ type (
 		ReadTimeout  time.Duration `env-required:"true" yaml:"read_timeout" env:"READ_TIMEOUT"`
 	}
 
+	GRPC struct {
+		Port string `env-required:"true" yaml:"port" env:"GRPC_PORT"`
+	}
+
 	Log struct {
 		Level string `yaml:"log_level"`
 	}
@@ -39,6 +46,11 @@ type (
 		Password string `env:"DB_PASSWORD"`
 		Host     string `env:"DB_HOST"`
 		PoolMax  int    `yaml:"pool_max"`
+	}
+
+	Redis struct {
+		Port string `env:"REDIS_PORT"`
+		Host string `env:"REDIS_HOST"`
 	}
 
 	Service struct {

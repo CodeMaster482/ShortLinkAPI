@@ -2,6 +2,9 @@ app:
   name: 'film-library-API'
   version: '1.0.0'
 
+grpc:
+  port: '9000'
+
 http:
   port: '8080'
   write_timeout: 5s

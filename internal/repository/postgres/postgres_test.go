@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"errors"
-	"reflect"
 	"regexp"
 	"testing"
 	"time"
@@ -88,77 +87,6 @@ func TestPostgreSQLRepository_StoreLink(t *testing.T) {
 				assert.EqualError(t, err, tc.expectError.Error())
 			} else {
 				assert.NoError(t, err)
-			}
-
-			assert.NoError(t, mock.ExpectationsWereMet())
-		})
-	}
-}
-
-func TestGetLinkByOriginal(t *testing.T) {
-	t.Parallel()
-
-	testCases := []struct {
-		name         string
-		origLink     string
-		rows         *pgxmock.Rows
-		expectError  error
-		errorPgx     error
-		expectedLink *model.Link
-	}{
-		{
-			name:     "Link exists",
-			origLink: "http://example.com",
-			rows: pgxmock.NewRows([]string{"original_link", "token", "expires_at"}).
-				AddRow("http://example.com", "abc123", time.Date(2012, time.January, 10, 0, 0, 0, 0, time.UTC)),
-			expectError: nil,
-			expectedLink: &model.Link{
-				OriginalLink: "http://example.com",
-				Token:        "abc123",
-				ExpiresAt:    time.Date(2012, time.January, 10, 0, 0, 0, 0, time.UTC),
-			},
-		},
-		{
-			name:         "Link does not exist",
-			origLink:     "http://nonexistent.com",
-			rows:         pgxmock.NewRows([]string{}),
-			errorPgx:     pgx.ErrNoRows,
-			expectError:  apierror.ErrLinkNotFound,
-			expectedLink: nil,
-		},
-		{
-			name:         "Internal error",
-			origLink:     "http://example.com",
-			rows:         pgxmock.NewRows([]string{}),
-			errorPgx:     errors.New("mock error"),
-			expectError:  apierror.ErrInternalServer,
-			expectedLink: nil,
-		},
-	}
-
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			mock, _ := pgxmock.NewPool()
-			repo := &LinkStorage{
-				db: mock,
-			}
-
-			escapedQuery := regexp.QuoteMeta(getLinkByFullLink)
-			mock.ExpectQuery(escapedQuery).
-				WithArgs(tc.origLink).
-				WillReturnRows(tc.rows).
-				WillReturnError(tc.errorPgx)
-
-			result, err := repo.GetLinkByOriginal(context.Background(), tc.origLink)
-
-			if !errors.Is(err, tc.expectError) {
-				t.Errorf("unexpected error, expected: %v, got: %v", tc.expectError, err)
-			}
-
-			if !reflect.DeepEqual(result, tc.expectedLink) {
-				t.Errorf("unexpected result, expected: %v, got: %v", tc.expectedLink, result)
 			}
 
 			assert.NoError(t, mock.ExpectationsWereMet())

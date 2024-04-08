@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 
 	"github.com/CodeMaster482/ShortLinkAPI/config"
@@ -8,6 +9,13 @@ import (
 
 	"github.com/joho/godotenv"
 )
+
+var useRedis bool
+
+func init() {
+	flag.BoolVar(&useRedis, "in-memo", false, "Set to true if use Redis, otherwise PostgreSQL.")
+	flag.Parse()
+}
 
 func main() {
 	err := godotenv.Load()
@@ -20,6 +28,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Config error: %s", err)
 	}
+
+	cfg.UseRedis = useRedis
 
 	app.Run(cfg)
 }

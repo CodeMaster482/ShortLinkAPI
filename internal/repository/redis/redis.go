@@ -20,17 +20,20 @@ func NewLinkStorage(cli *redis.Client) *LinkRedisStorage {
 	return &LinkRedisStorage{cli}
 }
 
-func (r *LinkRedisStorage) GetLink(ctx context.Context, token string) (string, error) {
+func (r *LinkRedisStorage) GetLink(ctx context.Context, token string) (*model.Link, error) {
 	fullLink, err := r.Client.Get(ctx, token).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) { /* err == redis.Nil */
-			return "", apierror.ErrLinkNotFound
+			return nil, apierror.ErrLinkNotFound
 		}
 
-		return "", err
+		return nil, err
 	}
 
-	return fullLink, nil
+	return &model.Link{
+		OriginalLink: fullLink,
+		Token:        token,
+	}, nil
 }
 
 func (r *LinkRedisStorage) StoreLink(ctx context.Context, link *model.Link) error {
@@ -47,4 +50,8 @@ func (r *LinkRedisStorage) StoreLink(ctx context.Context, link *model.Link) erro
 	}
 
 	return nil
+}
+
+func (r *LinkRedisStorage) StartRecalculation(interval time.Duration, deleted chan []string) {
+	return
 }

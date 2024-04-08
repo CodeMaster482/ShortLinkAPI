@@ -14,10 +14,8 @@ import (
 
 type LinkRepository interface {
 	GetLink(ctx context.Context, token string) (*model.Link, error)
-	GetLinkByOriginal(ctx context.Context, origLink string) (*model.Link, error)
 	StoreLink(ctx context.Context, link *model.Link) error
 	StartRecalculation(interval time.Duration, deleted chan []string)
-	// ShutDown(ctx context.Context) error
 }
 
 type Generator interface {
@@ -46,15 +44,14 @@ func (service *LinkService) CreateShortLink(ctx context.Context, linkRequest *dt
 		return nil, apierror.NewAPIError(apierror.ErrURLNotValid, err)
 	}
 
-	link, _ := service.repository.GetLinkByOriginal(ctx, linkRequest.Link)
+	token := service.generator.GenerateShortURL(linkRequest.Link)
+
+	link, _ := service.repository.GetLink(ctx, token)
 	if link != nil {
 		link.ShortLink = service.shortlinkPrefix + link.Token
 
 		return link, nil
 	}
-
-	token := ""
-	token = service.generator.GenerateShortURL(linkRequest.Link)
 
 	link = &model.Link{
 		OriginalLink: linkRequest.Link,

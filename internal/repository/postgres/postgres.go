@@ -49,21 +49,6 @@ func (store *LinkStorage) GetLink(ctx context.Context, token string) (*model.Lin
 	return link, nil
 }
 
-func (store *LinkStorage) GetLinkByOriginal(ctx context.Context, origLink string) (*model.Link, error) {
-	query := `SELECT s.original_link, s.token, s.expires_at FROM link s WHERE s.original_link = $1;`
-	link := &model.Link{}
-
-	err := store.db.QueryRow(context.Background(), query, origLink).Scan(&link.OriginalLink, &link.Token, &link.ExpiresAt)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, apierror.NotFoundError()
-		}
-		return nil, apierror.InternalError(err)
-	}
-
-	return link, nil
-}
-
 func (store *LinkStorage) StoreLink(ctx context.Context, link *model.Link) error {
 	query := `INSERT INTO link (original, short, expiration_time) VALUES ($1, $2, $3);`
 
@@ -100,10 +85,6 @@ func (store *LinkStorage) StartRecalculation(interval time.Duration, deleted cha
 		}
 	}()
 }
-
-// func (store *LinkStorage) ShutDown(ctx context.Context) error {
-// 	return store.db.Conn().Close(ctx)
-// }
 
 func NewLinkStorage(db DBConn) *LinkStorage {
 	return &LinkStorage{db}

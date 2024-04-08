@@ -5,7 +5,7 @@ LOCAL_BIN:=$(CURDIR)/bin
 PATH:=$(LOCAL_BIN):$(PATH)
 
 compose-up: ### Run docker-compose
-	docker-compose up --build -d postgres && docker-compose logs -f
+	docker-compose up --build -d postgres redis && docker-compose logs -f
 .PHONY: compose-up
 
 compose-down: ### Down docker-compose
