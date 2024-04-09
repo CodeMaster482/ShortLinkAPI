@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"log"
-	"time"
 
 	"github.com/CodeMaster482/ShortLinkAPI/config"
 	"github.com/CodeMaster482/ShortLinkAPI/internal/app"
@@ -21,14 +20,12 @@ func init() {
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		time.Sleep(60 * time.Second)
 		log.Fatalf("Env error: %s", err)
 		return
 	}
 
 	cfg, err := config.NewConfig()
 	if err != nil {
-		time.Sleep(60 * time.Second)
 		log.Fatalf("Config error: %s", err)
 	}
 
